@@ -5,7 +5,7 @@ package resources
 
 import (
 	"fmt"
-	"os"
+	"io/fs"
 	"path/filepath"
 	"sort"
 	"strings"
@@ -19,7 +19,7 @@ type FileResource struct {
 	fileSrc FileSource
 }
 
-func NewFileResources(file string) ([]FileResource, error) {
+func NewFileResources(file string, fsys fs.FS) ([]FileResource, error) {
 	var fileRs []FileResource
 
 	switch {
@@ -30,7 +30,7 @@ func NewFileResources(file string) ([]FileResource, error) {
 		fileRs = append(fileRs, NewFileResource(NewHTTPFileSource(file)))
 
 	default:
-		fileInfo, err := os.Stat(file)
+		fileInfo, err := fsys.(fs.StatFS).Stat(file)
 		if err != nil {
 			return nil, fmt.Errorf("Checking file: %v", err)
 		}
@@ -38,7 +38,7 @@ func NewFileResources(file string) ([]FileResource, error) {
 		if fileInfo.IsDir() {
 			var paths []string
 
-			err := filepath.Walk(file, func(path string, fi os.FileInfo, err error) error {
+			err := fs.WalkDir(fsys, file, func(path string, fi fs.DirEntry, err error) error {
 				if err != nil || fi.IsDir() {
 					return err
 				}
@@ -57,10 +57,10 @@ func NewFileResources(file string) ([]FileResource, error) {
 			sort.Strings(paths)
 
 			for _, path := range paths {
-				fileRs = append(fileRs, NewFileResource(NewLocalFileSource(path)))
+				fileRs = append(fileRs, NewFileResource(NewLocalFileSource(fsys, path)))
 			}
 		} else {
-			fileRs = append(fileRs, NewFileResource(NewLocalFileSource(file)))
+			fileRs = append(fileRs, NewFileResource(NewLocalFileSource(fsys, file)))
 		}
 	}
 

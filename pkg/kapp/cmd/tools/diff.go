@@ -4,8 +4,12 @@
 package tools
 
 import (
+	"io/fs"
+	"os"
+
 	"github.com/cppforlife/go-cli-ui/ui"
 	"github.com/spf13/cobra"
+
 	ctlcap "github.com/vmware-tanzu/carvel-kapp/pkg/kapp/clusterapply"
 	cmdcore "github.com/vmware-tanzu/carvel-kapp/pkg/kapp/cmd/core"
 	ctldiff "github.com/vmware-tanzu/carvel-kapp/pkg/kapp/diff"
@@ -38,12 +42,13 @@ func NewDiffCmd(o *DiffOptions, _ cmdcore.FlagsFactory) *cobra.Command {
 }
 
 func (o *DiffOptions) Run() error {
-	newResources, err := o.fileResources(o.FileFlags.Files)
+	fsys := os.DirFS("/")
+	newResources, err := o.fileResources(fsys, o.FileFlags.Files)
 	if err != nil {
 		return err
 	}
 
-	existingResources, err := o.fileResources(o.FileFlags2.Files)
+	existingResources, err := o.fileResources(fsys, o.FileFlags2.Files)
 	if err != nil {
 		return err
 	}
@@ -67,11 +72,11 @@ func (o *DiffOptions) Run() error {
 	return nil
 }
 
-func (o *DiffOptions) fileResources(files []string) ([]ctlres.Resource, error) {
+func (o *DiffOptions) fileResources(fsys fs.FS, files []string) ([]ctlres.Resource, error) {
 	var newResources []ctlres.Resource
 
 	for _, file := range files {
-		fileRs, err := ctlres.NewFileResources(file)
+		fileRs, err := ctlres.NewFileResources(file, fsys)
 		if err != nil {
 			return nil, err
 		}

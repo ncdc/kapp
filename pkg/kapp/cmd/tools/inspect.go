@@ -4,8 +4,11 @@
 package tools
 
 import (
+	"os"
+
 	"github.com/cppforlife/go-cli-ui/ui"
 	"github.com/spf13/cobra"
+
 	cmdcore "github.com/vmware-tanzu/carvel-kapp/pkg/kapp/cmd/core"
 	ctlres "github.com/vmware-tanzu/carvel-kapp/pkg/kapp/resources"
 )
@@ -47,9 +50,9 @@ func (o *InspectOptions) inspectFiles() error {
 	if err != nil {
 		return err
 	}
-
+	fsys := os.DirFS("/")
 	for _, file := range o.FileFlags.Files {
-		fileRs, err := ctlres.NewFileResources(file)
+		fileRs, err := ctlres.NewFileResources(file, fsys)
 		if err != nil {
 			return err
 		}
